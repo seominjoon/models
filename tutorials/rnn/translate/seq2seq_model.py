@@ -26,6 +26,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 import data_utils
+import seq2seq
 
 
 class Seq2SeqModel(object):
@@ -56,7 +57,11 @@ class Seq2SeqModel(object):
                use_lstm=False,
                num_samples=512,
                forward_only=False,
-               dtype=tf.float32):
+               dtype=tf.float32,
+               latent_seq=False,
+               latent_seq_len=10,
+               latent_seq_size=1024,
+               mode='att'):
     """Create the model.
 
     Args:
@@ -130,7 +135,42 @@ class Seq2SeqModel(object):
 
     # The seq2seq function: we use embedding for the input and attention.
     def seq2seq_f(encoder_inputs, decoder_inputs, do_decode):
-      return tf.contrib.legacy_seq2seq.embedding_attention_seq2seq(
+      if mode == 'att':
+        func = seq2seq.embedding_attention_seq2seq
+      elif mode == 'rnn':
+        func = seq2seq.embedding_rnn_seq2seq
+      else:
+        raise Exception()
+      if latent_seq:
+        with tf.variable_scope("encoder"):
+          encoder_inputs, _ = func(
+            encoder_inputs,
+            [tf.zeros([batch_size], dtype='int32')] * latent_seq_len,
+            cell,
+            num_encoder_symbols=source_vocab_size,
+            num_decoder_symbols=1,
+            embedding_size=size,
+            output_projection=output_projection,
+            feed_previous=False,
+            dtype=dtype,
+            projection=False
+          )
+        with tf.variable_scope("decoder"):
+          return func(
+            encoder_inputs,
+            decoder_inputs,
+            cell,
+            num_encoder_symbols=source_vocab_size, # ignored
+            num_decoder_symbols=target_vocab_size,
+            embedding_size=size, # ignored
+            output_projection=output_projection,
+            feed_previous=do_decode,
+            dtype=dtype,
+            embedding=False,
+          )
+
+      else:
+        return seq2seq.embedding_attention_seq2seq(
           encoder_inputs,
           decoder_inputs,
           cell,

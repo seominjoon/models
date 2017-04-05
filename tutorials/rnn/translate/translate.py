@@ -73,6 +73,14 @@ tf.app.flags.DEFINE_boolean("self_test", False,
                             "Run a self-test if this is set to True.")
 tf.app.flags.DEFINE_boolean("use_fp16", False,
                             "Train using fp16 instead of fp32.")
+tf.app.flags.DEFINE_boolean("latent_seq", False,
+                            "Use latent sequence?")
+tf.app.flags.DEFINE_integer("latent_seq_len", 10,
+                            "Length of latent sequence")
+tf.app.flags.DEFINE_integer("latent_seq_size", 1024,
+                            "Size of latent sequence hidden state")
+tf.app.flags.DEFINE_string("mode", "att",
+                           "att | rnn")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -133,7 +141,12 @@ def create_model(session, forward_only):
       FLAGS.learning_rate,
       FLAGS.learning_rate_decay_factor,
       forward_only=forward_only,
-      dtype=dtype)
+      dtype=dtype,
+      latent_seq=FLAGS.latent_seq,
+      latent_seq_len=FLAGS.latent_seq_len,
+      latent_seq_size=FLAGS.latent_seq_size,
+      mode=FLAGS.mode
+  )
   ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
   if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
     print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
@@ -296,7 +309,7 @@ def self_test():
     print("Self-test for neural translation model.")
     # Create model with vocabularies of 10, 2 small buckets, 2 layers of 32.
     model = seq2seq_model.Seq2SeqModel(10, 10, [(3, 3), (6, 6)], 32, 2,
-                                       5.0, 32, 0.3, 0.99, num_samples=8)
+                                       5.0, 32, 0.3, 0.99, num_samples=8, latent_seq=FLAGS.latent_seq, latent_seq_len=FLAGS.latent_seq_len, latent_seq_size=FLAGS.latent_seq_size, mode=FLAGS.mode)
     sess.run(tf.global_variables_initializer())
 
     # Fake data set for both the (3, 3) and (6, 6) bucket.
