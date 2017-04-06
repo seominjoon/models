@@ -233,6 +233,7 @@ class Seq2SeqModel(object):
             zip(clipped_gradients, params), global_step=self.global_step))
 
     self.saver = tf.train.Saver(tf.global_variables())
+    # self.summary = tf.summary.merge_all()
 
   def step(self, session, encoder_inputs, decoder_inputs, target_weights,
            bucket_id, forward_only):
@@ -283,14 +284,16 @@ class Seq2SeqModel(object):
       output_feed = [self.updates[bucket_id],  # Update Op that does SGD.
                      self.gradient_norms[bucket_id],  # Gradient norm.
                      self.losses[bucket_id]]  # Loss for this batch.
+      # output_feed.append(self.summary)
     else:
       output_feed = [self.losses[bucket_id]]  # Loss for this batch.
       for l in xrange(decoder_size):  # Output logits.
         output_feed.append(self.outputs[bucket_id][l])
 
+
     outputs = session.run(output_feed, input_feed)
     if not forward_only:
-      return outputs[1], outputs[2], None  # Gradient norm, loss, no outputs.
+      return outputs[1], outputs[2], None  # Gradient norm, loss, summary.
     else:
       return None, outputs[0], outputs[1:]  # No gradient norm, loss, outputs.
 
