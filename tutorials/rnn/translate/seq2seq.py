@@ -235,7 +235,8 @@ def embedding_rnn_decoder(decoder_inputs,
                           output_projection=None,
                           feed_previous=False,
                           update_embedding_for_previous=True,
-                          scope=None):
+                          scope=None,
+                          projection=True):
   """RNN decoder with embedding and a pure-decoding option.
 
   Args:
@@ -286,9 +287,12 @@ def embedding_rnn_decoder(decoder_inputs,
 
     embedding = variable_scope.get_variable("embedding",
                                             [num_symbols, embedding_size])
-    loop_function = _extract_argmax_and_embed(
-        embedding, output_projection,
-        update_embedding_for_previous) if feed_previous else None
+    if projection:
+      loop_function = _extract_argmax_and_embed(
+          embedding, output_projection,
+          update_embedding_for_previous) if feed_previous else None
+    else:
+        loop_function = lambda a, _: a if feed_previous else None
     emb_inp = (embedding_ops.embedding_lookup(embedding, i)
                for i in decoder_inputs)
     return rnn_decoder(
@@ -379,7 +383,9 @@ def embedding_rnn_seq2seq(encoder_inputs,
           num_decoder_symbols,
           embedding_size,
           output_projection=output_projection,
-          feed_previous=feed_previous)
+          feed_previous=feed_previous,
+          projection=projection
+      )
 
     # If feed_previous is a Tensor, we construct 2 graphs and use cond.
     def decoder(feed_previous_bool):
@@ -717,7 +723,8 @@ def embedding_attention_decoder(decoder_inputs,
                                 update_embedding_for_previous=True,
                                 dtype=None,
                                 scope=None,
-                                initial_state_attention=False):
+                                initial_state_attention=False,
+                                projection=True):
   """RNN decoder with embedding and attention and a pure-decoding option.
 
   Args:
@@ -773,9 +780,13 @@ def embedding_attention_decoder(decoder_inputs,
 
     embedding = variable_scope.get_variable("embedding",
                                             [num_symbols, embedding_size])
-    loop_function = _extract_argmax_and_embed(
-        embedding, output_projection,
-        update_embedding_for_previous) if feed_previous else None
+    if projection:
+        loop_function = _extract_argmax_and_embed(
+          embedding, output_projection,
+          update_embedding_for_previous) if feed_previous else None
+    else:
+        loop_function = lambda a, _: a if feed_previous else None
+
     emb_inp = [
         embedding_ops.embedding_lookup(embedding, i) for i in decoder_inputs
     ]
@@ -889,7 +900,9 @@ def embedding_attention_seq2seq(encoder_inputs,
           output_size=output_size,
           output_projection=output_projection,
           feed_previous=feed_previous,
-          initial_state_attention=initial_state_attention)
+          initial_state_attention=initial_state_attention,
+          projection=projection
+      )
 
     # If feed_previous is a Tensor, we construct 2 graphs and use cond.
     def decoder(feed_previous_bool):
@@ -908,7 +921,9 @@ def embedding_attention_seq2seq(encoder_inputs,
             output_projection=output_projection,
             feed_previous=feed_previous_bool,
             update_embedding_for_previous=False,
-            initial_state_attention=initial_state_attention)
+            initial_state_attention=initial_state_attention,
+            projection=projection
+        )
         state_list = [state]
         if nest.is_sequence(state):
           state_list = nest.flatten(state)

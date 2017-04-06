@@ -151,7 +151,7 @@ class Seq2SeqModel(object):
             num_decoder_symbols=1,
             embedding_size=size,
             output_projection=output_projection,
-            feed_previous=False,
+            feed_previous=True,
             dtype=dtype,
             projection=False
           )
