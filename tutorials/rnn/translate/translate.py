@@ -53,8 +53,8 @@ tf.app.flags.DEFINE_float("max_gradient_norm", 5.0,
                           "Clip gradients to this norm.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "Batch size to use during training.")
-tf.app.flags.DEFINE_integer("size", 1024, "Size of each model layer.")
-tf.app.flags.DEFINE_integer("num_layers", 3, "Number of layers in the model.")
+tf.app.flags.DEFINE_integer("size", 256, "Size of each model layer.")
+tf.app.flags.DEFINE_integer("num_layers", 1, "Number of layers in the model.")
 tf.app.flags.DEFINE_integer("from_vocab_size", 40000, "English vocabulary size.")
 tf.app.flags.DEFINE_integer("to_vocab_size", 40000, "French vocabulary size.")
 tf.app.flags.DEFINE_string("data_dir", "/tmp", "Data directory")
@@ -235,8 +235,8 @@ def train():
       if current_step % FLAGS.steps_per_checkpoint == 0:
         # Print statistics for the previous epoch.
         perplexity = math.exp(float(loss)) if loss < 300 else float("inf")
-        ppx_summary = tf.Summary(value=[tf.Summary.Value(tag='train/ppx'.format(bucket_id), simple_value=perplexity)])
-        writer.add_summary(ppx_summary, current_step)
+        loss_summary = tf.Summary(value=[tf.Summary.Value(tag='train/loss'.format(bucket_id), simple_value=loss)])
+        writer.add_summary(loss_summary, current_step)
         print ("global step %d learning rate %.4f step-time %.2f perplexity "
                "%.2f" % (model.global_step.eval(), model.learning_rate.eval(),
                          step_time, perplexity))
@@ -263,8 +263,8 @@ def train():
           eval_loss = sum(eval_losses)/len(eval_losses)
           eval_ppx = math.exp(float(eval_loss)) if eval_loss < 300 else float(
               "inf")
-          dev_ppx_summary = tf.Summary(value=[tf.Summary.Value(tag='dev/ppx/{}'.format(bucket_id), simple_value=eval_ppx)])
-          writer.add_summary(dev_ppx_summary, current_step)
+          dev_loss_summary = tf.Summary(value=[tf.Summary.Value(tag='dev/loss/{}'.format(bucket_id), simple_value=eval_loss)])
+          writer.add_summary(dev_loss_summary, current_step)
           print("  eval: bucket %d perplexity %.2f" % (bucket_id, eval_ppx))
         sys.stdout.flush()
 
